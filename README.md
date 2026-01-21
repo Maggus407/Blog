@@ -1,6 +1,6 @@
-# TanStack Start - Golden Standard Starter
+# Blog Website - TanStack Start
 
-This is a production-ready starter template featuring **TanStack Start**, **Drizzle ORM**, **Tailwind CSS v4**, **Shadcn UI**, **PostgreSQL**, and **DDEV**.
+This is a production-ready **Blog Website** featuring **TanStack Start**, **Drizzle ORM**, **Tailwind CSS v4**, **Shadcn UI**, **PostgreSQL**, and **DDEV**.
 
 ## Features
 
@@ -16,38 +16,17 @@ This is a production-ready starter template featuring **TanStack Start**, **Driz
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - [DDEV](https://ddev.com/get-started/)
 
-## Using this Template
-
-After creating a new repository from this template, follow these steps to rename the project:
-
-1.  **Update Project Name in `package.json`**:
-    Change the `"name"` field to your project name.
-
-2.  **Update DDEV Config in `.ddev/config.yaml`**:
-    Change `name: template` to your desired project name (e.g., `name: my-app`).
-    *Note: This will determine your local URL (e.g., `https://my-app.ddev.site`).*
-
-3.  **Update Vite Config in `vite.config.ts`**:
-    Update the `allowedHosts` array to match your new DDEV URL:
-    ```ts
-    allowedHosts: ['my-app.ddev.site'],
-    ```
-
-4.  **Start the Project**:
-    ```bash
-    ddev start
-    ```
 
 ## Getting Started
 
-1.  **Initialize the Environment**
+1.  **Start the Project**
     ```bash
     ddev start
     ```
     This automatically installs dependencies, sets up the database, and starts the development server.
 
 2.  **Access the Application**
-    Open [https://template.ddev.site](https://template.ddev.site)
+    Open [https://blog.ddev.site](https://blog.ddev.site)
 
 3.  **(Optional) Seed Database**
     To populate the database with initial data:

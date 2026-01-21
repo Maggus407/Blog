@@ -1,4 +1,4 @@
-name: template
+name: blog
 type: php
 project_tld: ddev.site
 
@@ -26,7 +26,7 @@ hooks:
   post-start:
     - exec: "npm install"
     - exec: "npm run db:push"
-    - exec-host: "echo 'Dein TanStack Blog läuft: https://template.ddev.site'"
+    - exec-host: "echo 'Dein TanStack Blog läuft: https://blog.ddev.site'"
 
 web_environment:
   - POSTGRES_USER=db

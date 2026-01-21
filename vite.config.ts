@@ -14,7 +14,7 @@ const config = defineConfig({
     },
   },
   server: {
-    allowedHosts: ['template.ddev.site'],
+    allowedHosts: ['blog.ddev.site'],
   },
 
   plugins: [

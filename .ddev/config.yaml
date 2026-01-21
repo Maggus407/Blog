@@ -32,4 +32,5 @@ web_environment:
   - POSTGRES_USER=db
   - POSTGRES_PASSWORD=db
   - POSTGRES_DB=db
+  - DATABASE_URL=postgresql://db:db@db/db
   - VINXI_HOST=0.0.0.0

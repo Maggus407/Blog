@@ -1,0 +1,35 @@
+name: template
+type: php
+project_tld: ddev.site
+
+# Datenbank (Postgres)
+database:
+  type: postgres
+  version: "16"
+
+# WICHTIG: Node 22 aktivieren
+nodejs_version: "22"
+
+docroot: ""
+
+# Hier passiert die Magie für TanStack
+web_extra_daemons:
+  - name: tanstack
+    # Der Server muss auf 0.0.0.0 hören (--host)
+    command: "npm run dev -- --host"
+    directory: /var/www/html
+    http_port: 3000
+    https_port: 3000
+
+# Automatisches Setup
+hooks:
+  post-start:
+    - exec: "npm install"
+    - exec: "npm run db:push"
+    - exec-host: "echo 'Dein TanStack Blog läuft: https://template.ddev.site'"
+
+web_environment:
+  - POSTGRES_USER=db
+  - POSTGRES_PASSWORD=db
+  - POSTGRES_DB=db
+  - VINXI_HOST=0.0.0.0

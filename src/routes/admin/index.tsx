@@ -6,6 +6,8 @@ import StarterKit from "@tiptap/starter-kit";
 import { auth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AlignedImage } from "@/lib/tiptap/aligned-image";
+import { cn } from "@/lib/utils";
 
 const getAdminSession = createServerFn({ method: "GET" }).handler(async () => {
     const session = await auth.api.getSession({
@@ -39,10 +41,43 @@ export const Route = createFileRoute("/admin/")({
 
 function AdminIndexComponent() {
     const editor = useEditor({
-        extensions: [StarterKit],
+        extensions: [StarterKit, AlignedImage],
         content: "<p>Write your blog post here...</p>",
         immediatelyRender: false,
     });
+
+    const toolbarButtonClass = (isActive: boolean) =>
+        cn(
+            "border-input",
+            isActive && "border-primary/70 bg-primary/10 text-primary",
+        );
+
+    const insertImage = () => {
+        if (!editor) {
+            return;
+        }
+
+        const src = window.prompt("Image URL");
+        if (!src) {
+            return;
+        }
+
+        const cleanedSource = src.trim();
+        if (!cleanedSource) {
+            return;
+        }
+
+        const altText = window.prompt("Alt text (optional)")?.trim() ?? "";
+        editor
+            .chain()
+            .focus()
+            .setImage({
+                src: cleanedSource,
+                alt: altText,
+                align: "center",
+            })
+            .run();
+    };
 
     return (
         <div className="space-y-4">
@@ -60,6 +95,7 @@ function AdminIndexComponent() {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className={toolbarButtonClass(!!editor?.isActive("bold"))}
                     onClick={() => editor?.chain().focus().toggleBold().run()}
                     disabled={!editor?.can().chain().focus().toggleBold().run()}
                 >
@@ -69,6 +105,7 @@ function AdminIndexComponent() {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className={toolbarButtonClass(!!editor?.isActive("italic"))}
                     onClick={() => editor?.chain().focus().toggleItalic().run()}
                     disabled={!editor?.can().chain().focus().toggleItalic().run()}
                 >
@@ -78,7 +115,9 @@ function AdminIndexComponent() {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className={toolbarButtonClass(!!editor?.isActive("bulletList"))}
                     onClick={() => editor?.chain().focus().toggleBulletList().run()}
+                    disabled={!editor?.can().chain().focus().toggleBulletList().run()}
                 >
                     Bullet list
                 </Button>
@@ -86,7 +125,9 @@ function AdminIndexComponent() {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className={toolbarButtonClass(!!editor?.isActive("orderedList"))}
                     onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+                    disabled={!editor?.can().chain().focus().toggleOrderedList().run()}
                 >
                     Numbered list
                 </Button>
@@ -94,7 +135,9 @@ function AdminIndexComponent() {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className={toolbarButtonClass(!!editor?.isActive("paragraph"))}
                     onClick={() => editor?.chain().focus().setParagraph().run()}
+                    disabled={!editor?.can().chain().focus().setParagraph().run()}
                 >
                     Paragraph
                 </Button>
@@ -102,18 +145,84 @@ function AdminIndexComponent() {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className={toolbarButtonClass(
+                        !!editor?.isActive("heading", { level: 2 }),
+                    )}
                     onClick={() =>
                         editor?.chain().focus().toggleHeading({ level: 2 }).run()
                     }
+                    disabled={
+                        !editor?.can().chain().focus().toggleHeading({ level: 2 }).run()
+                    }
                 >
                     H2
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={insertImage}
+                    disabled={!editor}
+                >
+                    Insert image
+                </Button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={toolbarButtonClass(
+                        !!editor?.isActive("image", { align: "left" }),
+                    )}
+                    onClick={() => editor?.chain().focus().setImageAlign("left").run()}
+                    disabled={!editor?.isActive("image")}
+                >
+                    Image left
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={toolbarButtonClass(
+                        !!editor?.isActive("image", { align: "center" }),
+                    )}
+                    onClick={() => editor?.chain().focus().setImageAlign("center").run()}
+                    disabled={!editor?.isActive("image")}
+                >
+                    Image center
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={toolbarButtonClass(
+                        !!editor?.isActive("image", { align: "right" }),
+                    )}
+                    onClick={() => editor?.chain().focus().setImageAlign("right").run()}
+                    disabled={!editor?.isActive("image")}
+                >
+                    Image right
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={toolbarButtonClass(
+                        !!editor?.isActive("image", { align: "full" }),
+                    )}
+                    onClick={() => editor?.chain().focus().setImageAlign("full").run()}
+                    disabled={!editor?.isActive("image")}
+                >
+                    Image full width
                 </Button>
             </div>
 
             <div className="rounded-md border border-input bg-background px-3 py-2">
                 <EditorContent
                     editor={editor}
-                    className="min-h-52 text-sm [&_.ProseMirror]:min-h-48 [&_.ProseMirror]:outline-none"
+                    className="admin-editor min-h-52 text-sm [&_.ProseMirror]:min-h-48 [&_.ProseMirror]:outline-none"
                 />
             </div>
 

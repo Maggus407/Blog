@@ -9,7 +9,6 @@ This is a production-ready **Blog Website** featuring **TanStack Start**, **Driz
 - **Database**: [PostgreSQL](https://www.postgresql.org/) (via [Drizzle ORM](https://orm.drizzle.team/))
 - **Environment**: [DDEV](https://ddev.com/) for reproducible local development
 - **Type Safety**: strict TypeScript
-- **Linting**: ESLint + Prettier
 
 ## Prerequisites
 
@@ -54,11 +53,3 @@ This is a production-ready **Blog Website** featuring **TanStack Start**, **Driz
 - `src/db`: Database schema, connection, and seed scripts.
 - `src/routes`: File-based routing (TanStack Router).
 - `.ddev`: DDEV configuration.
-
-## Contributing
-
-1.  Fork the repo
-2.  Create a feature branch
-3.  Commit your changes
-4.  Push to the branch
-5.  Create a Pull Request

@@ -101,3 +101,79 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .admin-editor .ProseMirror {
+    min-height: 12rem;
+    line-height: 1.7;
+  }
+
+  .admin-editor .ProseMirror > * + * {
+    margin-top: 0.75rem;
+  }
+
+  .admin-editor .ProseMirror p {
+    margin: 0;
+  }
+
+  .admin-editor .ProseMirror h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .admin-editor .ProseMirror ul,
+  .admin-editor .ProseMirror ol {
+    margin: 0;
+    padding-left: 1.5rem;
+  }
+
+  .admin-editor .ProseMirror ul {
+    list-style: disc;
+  }
+
+  .admin-editor .ProseMirror ol {
+    list-style: decimal;
+  }
+
+  .admin-editor .ProseMirror li p {
+    margin: 0;
+  }
+
+  .admin-editor .ProseMirror::after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+
+  .admin-editor .ProseMirror img.editor-image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 1rem 0;
+    border-radius: var(--radius-sm);
+  }
+
+  .admin-editor .ProseMirror img.editor-image--left {
+    float: left;
+    max-width: min(50%, 18rem);
+    margin: 0.25rem 1rem 0.75rem 0;
+  }
+
+  .admin-editor .ProseMirror img.editor-image--center {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .admin-editor .ProseMirror img.editor-image--right {
+    float: right;
+    max-width: min(50%, 18rem);
+    margin: 0.25rem 0 0.75rem 1rem;
+  }
+
+  .admin-editor .ProseMirror img.editor-image--full {
+    width: 100%;
+    max-width: 100%;
+  }
+}

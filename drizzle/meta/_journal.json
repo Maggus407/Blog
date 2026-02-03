@@ -15,6 +15,20 @@
       "when": 1769955738393,
       "tag": "0001_hesitant_omega_flight",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770111544373,
+      "tag": "0002_aspiring_namora",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1770112743622,
+      "tag": "0003_vengeful_hellfire_club",
+      "breakpoints": true
     }
   ]
 }

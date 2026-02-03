@@ -1,13 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { EditorContent, useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
+import { desc, sql } from "drizzle-orm";
+import { useCallback, useState } from "react";
+import { AdminPostList } from "@/components/admin/AdminPostList";
+import { AdminTipTapComposer } from "@/components/admin/AdminTipTapComposer";
+import type {
+    AdminDraftListResponse,
+    SaveDraftPayload,
+    SaveDraftResult,
+} from "@/components/admin/types";
+import { db } from "@/db";
+import { blogPost } from "@/db/schema";
 import { auth } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { AlignedImage } from "@/lib/tiptap/aligned-image";
-import { cn } from "@/lib/utils";
+
+const POSTS_PER_PAGE = 10;
 
 const getAdminSession = createServerFn({ method: "GET" }).handler(async () => {
     const session = await auth.api.getSession({
@@ -29,6 +36,100 @@ const getAdminSession = createServerFn({ method: "GET" }).handler(async () => {
     return session;
 });
 
+type ListDraftsInput = {
+    page?: number;
+};
+
+const listDrafts = createServerFn({ method: "GET" })
+    .inputValidator((input: ListDraftsInput | undefined) => {
+        const parsedPage = Number(input?.page ?? 1);
+        return {
+            page: Number.isNaN(parsedPage)
+                ? 1
+                : Math.max(1, Math.trunc(parsedPage)),
+        };
+    })
+    .handler(async ({ data }): Promise<AdminDraftListResponse> => {
+        const session = await getAdminSession();
+        if (!session) {
+            throw new Error("Unauthorized.");
+        }
+
+        const [countRow] = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(blogPost);
+
+        const totalPosts = Number(countRow?.count ?? 0);
+        const totalPages = Math.max(1, Math.ceil(totalPosts / POSTS_PER_PAGE));
+        const page = Math.min(data.page, totalPages);
+        const offset = (page - 1) * POSTS_PER_PAGE;
+
+        const posts = await db
+            .select({
+                id: blogPost.id,
+                title: blogPost.title,
+                createdAt: blogPost.createdAt,
+            })
+            .from(blogPost)
+            .orderBy(desc(blogPost.createdAt))
+            .limit(POSTS_PER_PAGE)
+            .offset(offset);
+
+        return {
+            page,
+            totalPages,
+            totalPosts,
+            posts: posts.map((post) => ({
+                id: post.id,
+                title: post.title,
+                createdAt: post.createdAt ? post.createdAt.toISOString() : null,
+            })),
+        };
+    });
+
+const saveDraft = createServerFn({ method: "POST" })
+    .inputValidator((input: SaveDraftPayload) => {
+        const title = input.title?.trim();
+        const contentHtml = input.contentHtml?.trim();
+
+        if (!title) {
+            throw new Error("Please add a title before saving.");
+        }
+
+        if (!contentHtml || contentHtml === "<p></p>") {
+            throw new Error("Please add some content before saving.");
+        }
+
+        return {
+            title,
+            contentHtml,
+        };
+    })
+    .handler(async ({ data }): Promise<SaveDraftResult> => {
+        const session = await getAdminSession();
+        if (!session) {
+            throw new Error("Unauthorized.");
+        }
+
+        const [draft] = await db
+            .insert(blogPost)
+            .values({
+                title: data.title,
+                contentHtml: data.contentHtml,
+                status: "draft",
+                authorId: session.user.id,
+            })
+            .returning({
+                id: blogPost.id,
+                updatedAt: blogPost.updatedAt,
+            });
+
+        return {
+            id: draft.id,
+            updatedAt: draft.updatedAt ? draft.updatedAt.toISOString() : null,
+        };
+    });
+
 export const Route = createFileRoute("/admin/")({
     beforeLoad: async () => {
         const session = await getAdminSession();
@@ -40,195 +141,34 @@ export const Route = createFileRoute("/admin/")({
 });
 
 function AdminIndexComponent() {
-    const editor = useEditor({
-        extensions: [StarterKit, AlignedImage],
-        content: "<p>Write your blog post here...</p>",
-        immediatelyRender: false,
-    });
+    const [draftRefreshKey, setDraftRefreshKey] = useState(0);
 
-    const toolbarButtonClass = (isActive: boolean) =>
-        cn(
-            "border-input",
-            isActive && "border-primary/70 bg-primary/10 text-primary",
-        );
+    const handleSaveDraft = useCallback(async (payload: SaveDraftPayload) => {
+        return saveDraft({
+            data: payload,
+        });
+    }, []);
 
-    const insertImage = () => {
-        if (!editor) {
-            return;
-        }
+    const handleListDrafts = useCallback(async (page: number) => {
+        return listDrafts({
+            data: { page },
+        });
+    }, []);
 
-        const src = window.prompt("Image URL");
-        if (!src) {
-            return;
-        }
-
-        const cleanedSource = src.trim();
-        if (!cleanedSource) {
-            return;
-        }
-
-        const altText = window.prompt("Alt text (optional)")?.trim() ?? "";
-        editor
-            .chain()
-            .focus()
-            .setImage({
-                src: cleanedSource,
-                alt: altText,
-                align: "center",
-            })
-            .run();
-    };
+    const handleDraftSaved = useCallback(() => {
+        setDraftRefreshKey((current) => current + 1);
+    }, []);
 
     return (
-        <div className="space-y-4">
-            <div>
-                <h2 className="text-foreground text-lg font-semibold">Create blog post</h2>
-                <p className="text-muted-foreground mt-1 text-sm">
-                    Draft your content below.
-                </p>
-            </div>
-
-            <Input placeholder="Post title" />
-
-            <div className="flex flex-wrap gap-2">
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={toolbarButtonClass(!!editor?.isActive("bold"))}
-                    onClick={() => editor?.chain().focus().toggleBold().run()}
-                    disabled={!editor?.can().chain().focus().toggleBold().run()}
-                >
-                    Bold
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={toolbarButtonClass(!!editor?.isActive("italic"))}
-                    onClick={() => editor?.chain().focus().toggleItalic().run()}
-                    disabled={!editor?.can().chain().focus().toggleItalic().run()}
-                >
-                    Italic
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={toolbarButtonClass(!!editor?.isActive("bulletList"))}
-                    onClick={() => editor?.chain().focus().toggleBulletList().run()}
-                    disabled={!editor?.can().chain().focus().toggleBulletList().run()}
-                >
-                    Bullet list
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={toolbarButtonClass(!!editor?.isActive("orderedList"))}
-                    onClick={() => editor?.chain().focus().toggleOrderedList().run()}
-                    disabled={!editor?.can().chain().focus().toggleOrderedList().run()}
-                >
-                    Numbered list
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={toolbarButtonClass(!!editor?.isActive("paragraph"))}
-                    onClick={() => editor?.chain().focus().setParagraph().run()}
-                    disabled={!editor?.can().chain().focus().setParagraph().run()}
-                >
-                    Paragraph
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={toolbarButtonClass(
-                        !!editor?.isActive("heading", { level: 2 }),
-                    )}
-                    onClick={() =>
-                        editor?.chain().focus().toggleHeading({ level: 2 }).run()
-                    }
-                    disabled={
-                        !editor?.can().chain().focus().toggleHeading({ level: 2 }).run()
-                    }
-                >
-                    H2
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={insertImage}
-                    disabled={!editor}
-                >
-                    Insert image
-                </Button>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={toolbarButtonClass(
-                        !!editor?.isActive("image", { align: "left" }),
-                    )}
-                    onClick={() => editor?.chain().focus().setImageAlign("left").run()}
-                    disabled={!editor?.isActive("image")}
-                >
-                    Image left
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={toolbarButtonClass(
-                        !!editor?.isActive("image", { align: "center" }),
-                    )}
-                    onClick={() => editor?.chain().focus().setImageAlign("center").run()}
-                    disabled={!editor?.isActive("image")}
-                >
-                    Image center
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={toolbarButtonClass(
-                        !!editor?.isActive("image", { align: "right" }),
-                    )}
-                    onClick={() => editor?.chain().focus().setImageAlign("right").run()}
-                    disabled={!editor?.isActive("image")}
-                >
-                    Image right
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className={toolbarButtonClass(
-                        !!editor?.isActive("image", { align: "full" }),
-                    )}
-                    onClick={() => editor?.chain().focus().setImageAlign("full").run()}
-                    disabled={!editor?.isActive("image")}
-                >
-                    Image full width
-                </Button>
-            </div>
-
-            <div className="rounded-md border border-input bg-background px-3 py-2">
-                <EditorContent
-                    editor={editor}
-                    className="admin-editor min-h-52 text-sm [&_.ProseMirror]:min-h-48 [&_.ProseMirror]:outline-none"
-                />
-            </div>
-
-            <div className="flex justify-end">
-                <Button type="button">Save draft</Button>
-            </div>
+        <div className="container mx-auto flex flex-row gap-4 px-4 py-8">
+            <AdminTipTapComposer
+                onSaveDraft={handleSaveDraft}
+                onSaved={handleDraftSaved}
+            />
+            <AdminPostList
+                loadDrafts={handleListDrafts}
+                refreshKey={draftRefreshKey}
+            />
         </div>
     );
 }

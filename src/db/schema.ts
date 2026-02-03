@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { boolean, index, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 			
 export const user = pgTable("user", {
 	id: text("id").primaryKey(),
@@ -45,3 +45,25 @@ export const verification = pgTable("verification", {
 	createdAt: timestamp("createdAt").notNull(),
 	updatedAt: timestamp("updatedAt").notNull()
 });
+
+export const blogPostStatusEnum = pgEnum("blog_post_status", [
+	"draft",
+	"published",
+	"archived",
+]);
+
+export const blogPost = pgTable(
+	"blog_post",
+	{
+		id: uuid("id").defaultRandom().primaryKey(),
+		title: text("title").notNull(),
+		contentHtml: text("contentHtml").notNull(),
+		status: blogPostStatusEnum("status").notNull().default("draft"),
+		authorId: text("authorId")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		createdAt: timestamp("createdAt").notNull().defaultNow(),
+		updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+	},
+	(table) => [index("blog_post_author_id_idx").on(table.authorId)],
+);
